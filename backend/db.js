@@ -12,8 +12,7 @@ async function getDb() {
   const SQL = await initSqlJs();
 
   if (fs.existsSync(DB_PATH)) {
-    const fileBuffer = fs.readFileSync(DB_PATH);
-    db = new SQL.Database(fileBuffer);
+    db = new SQL.Database(fs.readFileSync(DB_PATH));
   } else {
     db = new SQL.Database();
   }
@@ -21,7 +20,7 @@ async function getDb() {
   db.run(`
     CREATE TABLE IF NOT EXISTS patients (
       id TEXT PRIMARY KEY,
-      name TEXT,
+      name TEXT NOT NULL,
       age INTEGER,
       gravida INTEGER,
       para INTEGER,
@@ -29,24 +28,22 @@ async function getDb() {
       village TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     );
-
     CREATE TABLE IF NOT EXISTS cases (
       id TEXT PRIMARY KEY,
-      patient_id TEXT,
+      patient_id TEXT NOT NULL,
       symptoms TEXT,
       voice_note_path TEXT,
       image_path TEXT,
       ai_analysis TEXT,
-      urgency_level TEXT,
+      urgency_level TEXT DEFAULT 'unknown',
       status TEXT DEFAULT 'open',
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (patient_id) REFERENCES patients(id)
     );
-
     CREATE TABLE IF NOT EXISTS referrals (
       id TEXT PRIMARY KEY,
-      case_id TEXT,
-      patient_id TEXT,
+      case_id TEXT NOT NULL,
+      patient_id TEXT NOT NULL,
       summary TEXT,
       danger_signs TEXT,
       actions TEXT,
@@ -62,9 +59,8 @@ async function getDb() {
 
 function persist() {
   if (!db) return;
-  const data = db.export();
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-  fs.writeFileSync(DB_PATH, Buffer.from(data));
+  fs.writeFileSync(DB_PATH, Buffer.from(db.export()));
 }
 
 module.exports = { getDb, persist };
