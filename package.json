@@ -1,0 +1,11 @@
+{
+  "name": "mahiya-edge",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "backend": "cd backend && node server.js",
+    "frontend": "cd frontend && npx vite",
+    "dev:backend": "cd backend && node --watch server.js",
+    "dev:frontend": "cd frontend && npx vite"
+  }
+}

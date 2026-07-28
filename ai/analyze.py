@@ -7,6 +7,14 @@ Replace the stub logic below with actual Gemma 4 inference + RAG retrieval.
 
 import sys
 import json
+import os
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+try:
+    from rag.retriever import retrieve
+except Exception:
+    def retrieve(q, top_k=3): return []
 
 def analyze(symptoms: str, patient: dict, language: str) -> dict:
     """
@@ -17,6 +25,7 @@ def analyze(symptoms: str, patient: dict, language: str) -> dict:
       4. Parse structured JSON output
     """
     s = symptoms.lower()
+    guidelines = retrieve(symptoms)  # RAG: fetch relevant clinical chunks
     danger_signs = []
     urgency = "low"
 
@@ -61,6 +70,7 @@ def analyze(symptoms: str, patient: dict, language: str) -> dict:
         "reasoning": (
             "Assessment based on reported symptoms cross-referenced with "
             "WHO Maternal Health Guidelines and Nigeria FMOH Emergency Obstetric Care protocols."
+            + (f" Retrieved {len(guidelines)} relevant guideline section(s)." if guidelines else "")
         ),
         "confidence": "moderate",
         "disclaimer": (
