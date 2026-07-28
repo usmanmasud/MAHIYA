@@ -6,6 +6,7 @@ import Cases from './pages/Cases';
 import CaseDetail from './pages/CaseDetail';
 import NewCase from './pages/NewCase';
 import Settings from './pages/Settings';
+import PatientDetail from './pages/PatientDetail';
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/patients" element={<Patients />} />
+          <Route path="/patients/:id" element={<PatientDetail />} />
           <Route path="/cases" element={<Cases />} />
           <Route path="/cases/:id" element={<CaseDetail />} />
           <Route path="/new-case" element={<NewCase />} />
