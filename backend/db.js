@@ -80,6 +80,14 @@ async function getDb() {
       generated_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (case_id) REFERENCES cases(id)
     );
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      action TEXT NOT NULL,
+      entity TEXT,
+      entity_id TEXT,
+      detail TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   persist();

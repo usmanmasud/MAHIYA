@@ -80,9 +80,11 @@ export default function Settings() {
           <div className="space-y-3 text-sm">
             {[
               ['Version', '1.0.0-mvp'],
-              ['💾 Storage', 'Local SQLite — offline first'],
+              ['💾 Storage', 'Local SQLite — AES-256 encrypted'],
+              ['🔒 Auth', 'PIN-protected'],
               ['🌐 Languages', 'English 🇬🇧 + Hausa 🇳🇬'],
               ['📡 Network', 'Works fully offline (keyword mode)'],
+              ['📱 PWA', 'Installable — works offline'],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between">
                 <span className="text-gray-400">{label}</span>

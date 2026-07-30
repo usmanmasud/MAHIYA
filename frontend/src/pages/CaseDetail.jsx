@@ -42,6 +42,7 @@ export default function CaseDetail() {
         facility: a.referral_recommendation,
       });
       setReferral(r);
+      await api.log('REFERRAL_GENERATED', 'case', id, { urgency: caseData.urgency_level }).catch(() => {});
     } finally {
       setGenerating(false);
     }

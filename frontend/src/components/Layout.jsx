@@ -1,18 +1,19 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 import { OfflineBadge, GemmaBadge } from './ui';
 
 const nav = [
-  { to: '/',          emoji: '🏠', label: 'Dashboard' },
-  { to: '/patients',  emoji: '👩‍⚕️', label: 'Patients'  },
-  { to: '/cases',     emoji: '📋', label: 'Cases'     },
-  { to: '/new-case',  emoji: '➕', label: 'New Case'  },
-  { to: '/settings',  emoji: '⚙️', label: 'Settings'  },
+  { to: '/',           emoji: '🏠', label: 'Dashboard'  },
+  { to: '/patients',   emoji: '👩‍⚕️', label: 'Patients'   },
+  { to: '/cases',      emoji: '📋', label: 'Cases'      },
+  { to: '/new-case',   emoji: '➕', label: 'New Case'   },
+  { to: '/analytics',  emoji: '📊', label: 'Analytics'  },
+  { to: '/settings',   emoji: '⚙️', label: 'Settings'   },
 ];
 
-export default function Layout() {
+export default function Layout({ onLogout }) {
   return (
     <div className="flex h-screen overflow-hidden bg-[#f8f7f5]">
-      {/* Sidebar */}
       <aside className="w-52 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col">
         <div className="px-5 py-5 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
@@ -49,10 +50,15 @@ export default function Layout() {
         <div className="px-4 py-4 border-t border-gray-100 space-y-2">
           <OfflineBadge />
           <GemmaBadge />
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-700 transition-colors mt-1"
+          >
+            <LogOut size={11} /> Lock clinic
+          </button>
         </div>
       </aside>
 
-      {/* Main */}
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>

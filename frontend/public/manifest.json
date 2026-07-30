@@ -1,0 +1,14 @@
+{
+  "name": "Mahiya Edge",
+  "short_name": "Mahiya",
+  "description": "Offline Clinical Intelligence for Frontline Healthcare Workers",
+  "theme_color": "#111827",
+  "background_color": "#f8f7f5",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": "/",
+  "scope": "/",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

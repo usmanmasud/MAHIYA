@@ -1,0 +1,80 @@
+POSTPARTUM HEMORRHAGE (PPH)
+PPH is defined as blood loss of 500 mL or more within 24 hours after birth. It is the leading cause of maternal mortality globally.
+Danger signs: heavy vaginal bleeding after delivery, soaked pads, blood clots, pallor, rapid weak pulse, low blood pressure, confusion.
+Immediate actions: massage uterine fundus, give oxytocin 10 IU IM immediately, establish IV access, give IV fluids, do not leave patient alone, call for emergency transport, notify receiving facility.
+Referral: refer immediately to secondary or tertiary facility with blood transfusion capacity.
+Risk factors: prolonged labour, multiple pregnancy, grand multiparity, uterine fibroids, previous PPH, placenta previa.
+
+ECLAMPSIA
+Eclampsia is the occurrence of convulsions in a woman with preeclampsia. It is a life-threatening emergency.
+Danger signs: convulsions/seizures/fits in a pregnant or recently delivered woman, loss of consciousness, severe headache, visual disturbances, epigastric pain, hypertension (BP ≥160/110 mmHg).
+Immediate actions: protect airway, place in left lateral position, give magnesium sulphate (loading dose 4g IV over 15 min, then 1g/hr maintenance), give antihypertensives if BP ≥160/110, do not leave patient, call emergency transport.
+Referral: refer immediately to hospital with ICU capacity.
+
+PREECLAMPSIA
+Preeclampsia is hypertension (BP ≥140/90 mmHg) with proteinuria after 20 weeks gestation.
+Danger signs: severe headache, blurred vision, seeing spots/flashing lights, swelling of face and hands, epigastric pain, BP ≥140/90 mmHg, reduced fetal movement.
+Immediate actions: check BP every 15 minutes, check urine for protein, give antihypertensives if BP ≥160/110, prepare for possible referral, monitor fetal heart rate.
+Referral: refer to secondary facility for monitoring and management. Refer immediately if severe features present.
+
+OBSTRUCTED LABOUR
+Obstructed labour occurs when the fetus cannot descend through the pelvis despite strong uterine contractions.
+Danger signs: prolonged labour (>12 hours active phase), failure to progress, caput succedaneum, moulding, maternal exhaustion, fetal distress, abnormal fetal heart rate (<100 or >180 bpm).
+Immediate actions: do not perform fundal pressure, establish IV access, give IV fluids, empty bladder via catheter, call emergency transport immediately.
+Referral: refer immediately to facility with surgical capacity for caesarean section.
+
+NEONATAL SEPSIS
+Neonatal sepsis is a life-threatening infection in newborns, most common in first 28 days of life.
+Danger signs: fever (temperature >38°C) or hypothermia (<36°C), not feeding or poor feeding, lethargy or reduced activity, fast breathing (>60 breaths/min), grunting, chest indrawing, bulging fontanelle, jaundice in first 24 hours, convulsions, umbilical redness or discharge.
+Immediate actions: keep baby warm, encourage breastfeeding if able, give first dose of antibiotics (ampicillin + gentamicin) if available and trained, refer immediately.
+Referral: refer to hospital with neonatal unit immediately. Do not delay for feeding.
+
+NEONATAL BIRTH ASPHYXIA
+Birth asphyxia is failure to establish breathing at birth.
+Danger signs: baby not breathing or gasping at birth, blue or pale colour, limp muscle tone, heart rate <100 bpm.
+Immediate actions: dry and stimulate baby, clear airway, begin bag-mask ventilation if not breathing after 30 seconds of stimulation, call for help.
+Referral: refer to neonatal unit if not responding to resuscitation within 10 minutes.
+
+ANTEPARTUM HEMORRHAGE (APH)
+APH is bleeding from the genital tract after 22 weeks of pregnancy.
+Danger signs: vaginal bleeding in pregnancy, abdominal pain with bleeding (placental abruption), painless bleeding (placenta previa), tender rigid uterus, fetal distress.
+Immediate actions: do not perform vaginal examination, establish IV access, give IV fluids, monitor fetal heart rate, call emergency transport.
+Referral: refer immediately to hospital with surgical and blood transfusion capacity.
+
+PUERPERAL SEPSIS
+Puerperal sepsis is infection of the genital tract following childbirth or abortion.
+Danger signs: fever >38°C within 10 days of delivery, offensive vaginal discharge, uterine tenderness, lower abdominal pain, general malaise.
+Immediate actions: give antibiotics (ampicillin + metronidazole if available), ensure adequate hydration, refer.
+Referral: refer to secondary facility for IV antibiotics and monitoring.
+
+RUPTURED UTERUS
+Uterine rupture is a catastrophic obstetric emergency with high maternal and fetal mortality.
+Danger signs: sudden severe abdominal pain, cessation of contractions, fetal parts easily palpable outside uterus, maternal shock, vaginal bleeding, loss of fetal heart sounds.
+Immediate actions: establish IV access immediately, give IV fluids rapidly, call emergency transport, do not delay referral.
+Referral: refer immediately to surgical facility. This is a surgical emergency.
+
+MATERNAL DANGER SIGNS — GENERAL
+Any pregnant or recently delivered woman with the following requires urgent referral:
+- Severe headache not relieved by paracetamol
+- Visual disturbances (blurred vision, seeing spots)
+- Difficulty breathing or fast breathing
+- Chest pain
+- Severe abdominal pain
+- High fever (>38°C)
+- Convulsions or loss of consciousness
+- Heavy vaginal bleeding
+- Foul-smelling vaginal discharge
+- Inability to walk or stand
+- Reduced or absent fetal movement
+
+HAUSA DANGER SIGNS (Alamomin Haɗari)
+Zubar jini mai yawa bayan haihuwa — PPH
+Jiri ko farfadiya — Eclampsia
+Ciwon kai mai tsanani — Preeclampsia
+Kumburi a fuska da hannaye — Preeclampsia
+Hawan jini — Hypertension
+Wahalar haihuwa mai tsawo — Obstructed labour
+Zazzabi a jariiri — Neonatal sepsis
+Jariiri baya numfashi — Birth asphyxia
+Jariiri baya ci — Neonatal illness
+Jini a lokacin daukar ciki — Antepartum hemorrhage

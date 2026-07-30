@@ -1,0 +1,4 @@
+google-generativeai
+faster-whisper
+faiss-cpu
+sentence-transformers

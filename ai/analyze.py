@@ -26,8 +26,8 @@ except Exception:
 # ---------------------------------------------------------------------------
 # Model config
 # ---------------------------------------------------------------------------
-GEMMA_MODEL = "gemma-3-27b-it"        # Gemini API model
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma3")  # local Ollama model
+GEMMA_MODEL = "gemma-3n-e4b-it"        # Gemma 4 via Gemini API (gemma-3n = Gemma 4 generation)
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma3n")  # Gemma 4 via Ollama (when available)
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
 # ---------------------------------------------------------------------------
@@ -141,10 +141,21 @@ def _build_prompt(symptoms: str, patient: dict, language: str, guidelines: list,
     guidelines_text = "\n".join(f"- {g}" for g in guidelines) if guidelines else "No guidelines retrieved (RAG index not built)."
     image_section = f"\nClinical image observation:\n{image_description}" if image_description else ""
 
+    # Vitals
+    vitals = patient.get("vitals", {})
+    vitals_parts = []
+    if vitals.get("bp_systolic") and vitals.get("bp_diastolic"):
+        vitals_parts.append(f"BP: {vitals['bp_systolic']}/{vitals['bp_diastolic']} mmHg")
+    if vitals.get("temperature"): vitals_parts.append(f"Temp: {vitals['temperature']}°C")
+    if vitals.get("pulse"): vitals_parts.append(f"Pulse: {vitals['pulse']} bpm")
+    if vitals.get("respiratory_rate"): vitals_parts.append(f"RR: {vitals['respiratory_rate']}/min")
+    if vitals.get("spo2"): vitals_parts.append(f"SpO2: {vitals['spo2']}%")
+    vitals_section = ("\nVital signs: " + " | ".join(vitals_parts)) if vitals_parts else ""
+
     return f"""Patient: {name}, Age {age}, G{gravida}P{para}, LMP: {lmp}, Village: {village}
 
 Reported symptoms ({lang_label}):
-{symptoms}{image_section}
+{symptoms}{vitals_section}{image_section}
 
 Retrieved clinical guidelines:
 {guidelines_text}

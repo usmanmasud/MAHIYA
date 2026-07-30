@@ -9,10 +9,28 @@ app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '..', 'storage')));
 
-app.use('/api/patients', require('./routes/patients'));
-app.use('/api/cases', require('./routes/cases'));
+// PIN auth middleware — protects all /api routes except /api/health and /api/auth
+const CLINIC_PIN = process.env.CLINIC_PIN || '1234';
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health' || req.path.startsWith('/auth')) return next();
+  const token = req.headers['x-clinic-pin'] || req.query.pin;
+  if (token !== CLINIC_PIN) return res.status(401).json({ error: 'Unauthorized' });
+  next();
+});
+
+// Auth endpoint — validate PIN, return session token (same PIN for simplicity)
+app.post('/api/auth/login', (req, res) => {
+  const { pin } = req.body;
+  if (pin !== CLINIC_PIN) return res.status(401).json({ error: 'Invalid PIN' });
+  res.json({ token: CLINIC_PIN, ok: true });
+});
+
+app.use('/api/patients',  require('./routes/patients'));
+app.use('/api/cases',     require('./routes/cases'));
 app.use('/api/referrals', require('./routes/referrals'));
-app.use('/api/ai', require('./routes/ai'));
+app.use('/api/ai',        require('./routes/ai'));
+app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/audit',     require('./routes/audit'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', offline: true }));
 
