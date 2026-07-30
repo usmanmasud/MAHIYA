@@ -1,22 +1,45 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mic, MicOff, ChevronRight } from 'lucide-react';
 import { api } from '../lib/api';
-import { Card, Btn, Input, Textarea, Spinner, Disclaimer } from '../components/ui';
+import { Card, Btn, Input, Textarea, Spinner, Disclaimer, LangToggle } from '../components/ui';
 
-const STEPS = ['Patient', 'Symptoms', 'Analyse'];
+const STEPS = [
+  { emoji: '👤', label: 'Patient' },
+  { emoji: '🩺', label: 'Symptoms' },
+  { emoji: '🤖', label: 'Analyse' },
+];
+
+const HAUSA_PLACEHOLDERS = {
+  name: 'Sunan majiyyaci...',
+  village: 'Ƙauye / LGA...',
+  symptoms: 'Rubuta alamomin ciwo a nan... (misali: ciwon kai, kumburi, jini)',
+};
+
+const EN_PLACEHOLDERS = {
+  name: 'e.g. Fatima Musa',
+  village: 'e.g. Kano LGA',
+  symptoms: 'Describe symptoms, vital signs, observations... (e.g. severe headache, swelling, bleeding)',
+};
 
 export default function NewCase() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
   const [recording, setRecording] = useState(false);
   const [mediaRec, setMediaRec] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const [patient, setPatient] = useState({ name: '', age: '', gravida: '', para: '', lmp: '', village: '' });
-  const [symptoms, setSymptoms] = useState('');
   const [language, setLanguage] = useState('en');
+
+  const [patient, setPatient] = useState({
+    name: '', age: '', gravida: '', para: '', lmp: '', village: '',
+    id: searchParams.get('patient_id') || null,
+  });
+  const [symptoms, setSymptoms] = useState('');
+
+  const ph = language === 'ha' ? HAUSA_PLACEHOLDERS : EN_PLACEHOLDERS;
+  const isExistingPatient = !!patient.id;
 
   function patchPatient(k, v) { setPatient(p => ({ ...p, [k]: v })); }
 
@@ -27,16 +50,14 @@ export default function NewCase() {
       const chunks = [];
       rec.ondataavailable = e => chunks.push(e.data);
       rec.onstop = () => {
-        // In production: send audio to speech-to-text endpoint
-        // For now, just indicate recording was captured
-        setSymptoms(s => s + (s ? ' ' : '') + '[Voice note captured]');
+        setSymptoms(s => s + (s ? '\n' : '') + (language === 'ha' ? '[Sauti an ɗauka]' : '[Voice note captured — transcription pending]'));
         stream.getTracks().forEach(t => t.stop());
       };
       rec.start();
       setMediaRec(rec);
       setRecording(true);
     } catch {
-      setError('Microphone access denied.');
+      setError(language === 'ha' ? 'Ba a yarda da amfani da makirofon.' : 'Microphone access denied.');
     }
   }
 
@@ -50,13 +71,18 @@ export default function NewCase() {
     setLoading(true);
     setError('');
     try {
-      const p = await api.createPatient(patient);
-      const c = await api.createCase({ patient_id: p.id, symptoms, urgency_level: 'unknown' });
-      const analysis = await api.analyze({ symptoms, patient: p, language });
+      let patientData;
+      if (isExistingPatient) {
+        patientData = await api.getPatient(patient.id);
+      } else {
+        patientData = await api.createPatient(patient);
+      }
+      const c = await api.createCase({ patient_id: patientData.id, symptoms, urgency_level: 'unknown' });
+      const analysis = await api.analyze({ symptoms, patient: patientData, language });
       await api.updateAnalysis(c.id, { ai_analysis: analysis, urgency_level: analysis.urgency_level });
       navigate(`/cases/${c.id}`);
-    } catch (e) {
-      setError('Something went wrong. Check that the backend is running.');
+    } catch {
+      setError(language === 'ha' ? 'Wani abu ya kasa. Duba cewa backend yana aiki.' : 'Something went wrong. Make sure the backend is running.');
     } finally {
       setLoading(false);
     }
@@ -64,113 +90,157 @@ export default function NewCase() {
 
   return (
     <div className="p-8 max-w-xl">
-      <div className="mb-8">
-        <h1 className="text-xl font-semibold text-[#e8e3dc]">New Case</h1>
-        <p className="text-sm text-[#555] mt-1">Register patient and record symptoms</p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">
+            {language === 'ha' ? '🩺 Sabon Shari\'a' : '🩺 New Case'}
+          </h1>
+          <p className="text-sm text-gray-400 mt-1">
+            {language === 'ha' ? 'Yi rajista kuma rubuta alamomin ciwo' : 'Register patient and record symptoms'}
+          </p>
+        </div>
+        <LangToggle value={language} onChange={setLanguage} />
       </div>
 
       {/* Step indicator */}
-      <div className="flex items-center gap-2 mb-8">
+      <div className="flex items-center gap-2 mb-6">
         {STEPS.map((s, i) => (
-          <div key={s} className="flex items-center gap-2">
-            <div className={`flex items-center gap-2 text-xs font-medium ${i === step ? 'text-[#e8e3dc]' : i < step ? 'text-[#555]' : 'text-[#333]'}`}>
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                i === step ? 'bg-[#e8e3dc] text-[#0f0f0f]' : i < step ? 'bg-[#2a2a2a] text-[#666]' : 'bg-[#1a1a1a] text-[#333]'
-              }`}>{i + 1}</span>
-              {s}
+          <div key={s.label} className="flex items-center gap-2">
+            <div className={`flex items-center gap-1.5 text-xs font-medium ${
+              i === step ? 'text-gray-900' : i < step ? 'text-gray-400' : 'text-gray-300'
+            }`}>
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                i === step ? 'bg-gray-900 text-white' : i < step ? 'bg-gray-200 text-gray-500' : 'bg-gray-100 text-gray-300'
+              }`}>{i < step ? '✓' : i + 1}</span>
+              {s.emoji} {s.label}
             </div>
-            {i < STEPS.length - 1 && <ChevronRight size={12} className="text-[#2a2a2a]" />}
+            {i < STEPS.length - 1 && <ChevronRight size={12} className="text-gray-300" />}
           </div>
         ))}
       </div>
 
-      {error && <p className="text-xs text-red-400 mb-4 bg-red-950 border border-red-900 rounded-xl px-4 py-3">{error}</p>}
+      {error && (
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-xs text-red-700">
+          ⚠️ {error}
+        </div>
+      )}
 
+      {/* Step 0 — Patient */}
       {step === 0 && (
         <Card className="p-5 space-y-4">
-          <Input label="Full Name *" value={patient.name} onChange={e => patchPatient('name', e.target.value)} placeholder="Fatima Musa" />
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Age" type="number" value={patient.age} onChange={e => patchPatient('age', e.target.value)} placeholder="28" />
-            <Input label="Village / LGA" value={patient.village} onChange={e => patchPatient('village', e.target.value)} placeholder="Kano" />
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <Input label="Gravida" type="number" value={patient.gravida} onChange={e => patchPatient('gravida', e.target.value)} placeholder="2" />
-            <Input label="Para" type="number" value={patient.para} onChange={e => patchPatient('para', e.target.value)} placeholder="1" />
-            <Input label="LMP" type="date" value={patient.lmp} onChange={e => patchPatient('lmp', e.target.value)} />
-          </div>
+          {isExistingPatient ? (
+            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700">
+              ✅ {language === 'ha' ? 'Ana amfani da majiyyaci da aka yi rajista.' : 'Using existing registered patient.'}
+            </div>
+          ) : (
+            <>
+              <Input
+                label={language === 'ha' ? '👤 Cikakken Suna *' : '👤 Full Name *'}
+                value={patient.name}
+                onChange={e => patchPatient('name', e.target.value)}
+                placeholder={ph.name}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label={language === 'ha' ? '🎂 Shekaru' : '🎂 Age'}
+                  type="number" value={patient.age}
+                  onChange={e => patchPatient('age', e.target.value)}
+                  placeholder="28"
+                />
+                <Input
+                  label={language === 'ha' ? '📍 Ƙauye / LGA' : '📍 Village / LGA'}
+                  value={patient.village}
+                  onChange={e => patchPatient('village', e.target.value)}
+                  placeholder={ph.village}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <Input label="Gravida" type="number" value={patient.gravida} onChange={e => patchPatient('gravida', e.target.value)} placeholder="2" />
+                <Input label="Para" type="number" value={patient.para} onChange={e => patchPatient('para', e.target.value)} placeholder="1" />
+                <Input label="LMP" type="date" value={patient.lmp} onChange={e => patchPatient('lmp', e.target.value)} />
+              </div>
+            </>
+          )}
           <div className="pt-2 flex justify-end">
-            <Btn onClick={() => { if (!patient.name.trim()) { setError('Patient name is required.'); return; } setError(''); setStep(1); }}>
-              Continue <ChevronRight size={14} />
+            <Btn onClick={() => {
+              if (!isExistingPatient && !patient.name.trim()) { setError(language === 'ha' ? 'Ana buƙatar sunan majiyyaci.' : 'Patient name is required.'); return; }
+              setError(''); setStep(1);
+            }}>
+              {language === 'ha' ? 'Ci gaba' : 'Continue'} <ChevronRight size={14} />
             </Btn>
           </div>
         </Card>
       )}
 
+      {/* Step 1 — Symptoms */}
       {step === 1 && (
         <Card className="p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-[#666] font-medium uppercase tracking-wide">Language</span>
-            <div className="flex gap-1">
-              {['en', 'ha'].map(l => (
-                <button key={l} onClick={() => setLanguage(l)}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${language === l ? 'bg-[#e8e3dc] text-[#0f0f0f]' : 'bg-[#1e1e1e] text-[#555] hover:text-[#999]'}`}>
-                  {l === 'en' ? 'English' : 'Hausa'}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <Textarea
-            label="Symptoms & Observations"
+            label={language === 'ha' ? '🩺 Alamomin Ciwo & Lura' : '🩺 Symptoms & Observations'}
             value={symptoms}
             onChange={e => setSymptoms(e.target.value)}
-            placeholder={language === 'ha' ? 'Rubuta alamomin ciwo a nan...' : 'Describe symptoms, vital signs, observations...'}
+            placeholder={ph.symptoms}
             rows={5}
+            hint={language === 'ha'
+              ? 'Rubuta ko yi amfani da murya — AI yana fahimtar Hausa da Turanci'
+              : 'Type or use voice — AI understands both Hausa and English'}
           />
 
           <div className="flex items-center gap-3">
             <button
               onClick={recording ? stopRecording : startRecording}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
                 recording
-                  ? 'bg-red-950 text-red-400 border border-red-900 animate-pulse'
-                  : 'bg-[#1a1a1a] border border-[#2a2a2a] text-[#666] hover:text-[#999]'
+                  ? 'bg-red-50 text-red-700 border-red-200 animate-pulse'
+                  : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
               }`}
             >
               {recording ? <MicOff size={14} /> : <Mic size={14} />}
-              {recording ? 'Stop Recording' : 'Voice Input'}
+              {recording
+                ? (language === 'ha' ? '⏹ Tsaya' : '⏹ Stop Recording')
+                : (language === 'ha' ? '🎙 Yi Amfani da Murya' : '🎙 Voice Input')}
             </button>
-            <span className="text-xs text-[#444]">Speak in Hausa or English</span>
+            {recording && <span className="text-xs text-red-500 animate-pulse">● Recording...</span>}
           </div>
 
           <div className="pt-2 flex justify-between">
-            <Btn variant="ghost" onClick={() => setStep(0)}>Back</Btn>
-            <Btn onClick={() => { if (!symptoms.trim()) { setError('Please enter symptoms.'); return; } setError(''); setStep(2); }}>
-              Continue <ChevronRight size={14} />
+            <Btn variant="ghost" onClick={() => setStep(0)}>← {language === 'ha' ? 'Baya' : 'Back'}</Btn>
+            <Btn onClick={() => {
+              if (!symptoms.trim()) { setError(language === 'ha' ? 'Da fatan za a shigar da alamomin ciwo.' : 'Please enter symptoms.'); return; }
+              setError(''); setStep(2);
+            }}>
+              {language === 'ha' ? 'Ci gaba' : 'Continue'} <ChevronRight size={14} />
             </Btn>
           </div>
         </Card>
       )}
 
+      {/* Step 2 — Review & Analyse */}
       {step === 2 && (
         <Card className="p-5 space-y-4">
           <div className="space-y-3">
-            <div className="bg-[#1a1a1a] rounded-xl p-4">
-              <p className="text-xs text-[#555] mb-1 uppercase tracking-wide font-medium">Patient</p>
-              <p className="text-sm text-[#ccc]">{patient.name}, {patient.age && `Age ${patient.age}`} {patient.village && `· ${patient.village}`}</p>
+            <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-xs text-gray-400 mb-1 font-medium">👤 {language === 'ha' ? 'Majiyyaci' : 'Patient'}</p>
+              <p className="text-sm text-gray-800">
+                {isExistingPatient ? `ID: ${patient.id}` : `${patient.name}${patient.age ? `, Age ${patient.age}` : ''}${patient.village ? ` · ${patient.village}` : ''}`}
+              </p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-xl p-4">
-              <p className="text-xs text-[#555] mb-1 uppercase tracking-wide font-medium">Symptoms</p>
-              <p className="text-sm text-[#ccc] leading-relaxed">{symptoms}</p>
+            <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-xs text-gray-400 mb-1 font-medium">🩺 {language === 'ha' ? 'Alamomin Ciwo' : 'Symptoms'}</p>
+              <p className="text-sm text-gray-800 leading-relaxed">{symptoms}</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-xs text-gray-400 mb-1 font-medium">🌐 {language === 'ha' ? 'Harshe' : 'Language'}</p>
+              <p className="text-sm text-gray-800">{language === 'ha' ? '🇳🇬 Hausa' : '🇬🇧 English'}</p>
             </div>
           </div>
 
           <Disclaimer />
 
           <div className="flex justify-between pt-2">
-            <Btn variant="ghost" onClick={() => setStep(1)}>Back</Btn>
-            <Btn onClick={handleSubmit} disabled={loading}>
-              {loading ? <><Spinner /> Analysing...</> : 'Run AI Analysis'}
+            <Btn variant="ghost" onClick={() => setStep(1)}>← {language === 'ha' ? 'Baya' : 'Back'}</Btn>
+            <Btn onClick={handleSubmit} disabled={loading} variant="green">
+              {loading ? <><Spinner /> {language === 'ha' ? 'Ana nazari...' : 'Analysing...'}</> : `🤖 ${language === 'ha' ? 'Gudanar da AI' : 'Run AI Analysis'}`}
             </Btn>
           </div>
         </Card>

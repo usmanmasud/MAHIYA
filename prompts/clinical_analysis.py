@@ -11,6 +11,7 @@ Your role:
 - Generate structured, actionable clinical summaries
 - Always recommend referral when danger signs are present
 - Respond in the language specified (English or Hausa)
+- If language is Hausa (ha), write danger_signs, immediate_actions, referral_recommendation, and reasoning in Hausa
 
 You MUST always output valid JSON matching this exact schema:
 {
@@ -22,23 +23,36 @@ You MUST always output valid JSON matching this exact schema:
   "referral_recommendation": "string",
   "reasoning": "string",
   "confidence": "high|moderate|low",
-  "disclaimer": "This tool supports clinical decision-making and does not replace professional medical judgment.",
+  "disclaimer": "string",
   "language_used": "en|ha"
 }
 
 Never diagnose. Never claim certainty. Always explain your reasoning.
 If danger signs are present, urgency_level must be critical or high.
+Output ONLY the JSON object. No prose outside the JSON.
 """
 
 USER_PROMPT_TEMPLATE = """
 Patient: {name}, Age {age}, G{gravida}P{para}, LMP: {lmp}, Village: {village}
 
-Reported symptoms:
+Reported symptoms ({language}):
 {symptoms}
 
 Retrieved clinical guidelines:
 {guidelines}
 
-Analyse the above and return structured JSON only. No prose outside the JSON.
-Language: {language}
+Analyse the above and return structured JSON only.
+Language for output: {language_label}
+"""
+
+HAUSA_SYSTEM_ADDENDUM = """
+Idan harshe shine Hausa, rubuta waɗannan filayen cikin Hausa:
+- danger_signs
+- immediate_actions
+- referral_recommendation
+- reasoning
+- disclaimer
+
+Misali na disclaimer a Hausa:
+"Wannan kayan aiki yana tallafawa yanke shawara na asibiti kuma baya maye gurbin hukuncin likita na ƙwararru."
 """

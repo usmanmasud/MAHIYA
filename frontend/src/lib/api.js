@@ -24,4 +24,5 @@ export const api = {
   createReferral: (data) => req('POST', '/referrals', data),
 
   analyze: (data) => req('POST', '/ai/analyze', data),
+  aiStatus: () => req('GET', '/ai/status'),
 };

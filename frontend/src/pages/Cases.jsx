@@ -14,29 +14,30 @@ export default function Cases() {
   return (
     <div className="p-8 max-w-3xl">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-[#e8e3dc]">Cases</h1>
-        <p className="text-sm text-[#555] mt-1">{cases.length} total</p>
+        <h1 className="text-xl font-semibold text-gray-900">📋 Cases</h1>
+        <p className="text-sm text-gray-400 mt-1">{cases.length} total</p>
       </div>
 
       <Card>
         {loading ? (
-          <div className="p-8 text-center text-sm text-[#444]">Loading...</div>
+          <div className="p-8 text-center text-sm text-gray-400">Loading cases... ⏳</div>
         ) : cases.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-sm text-[#444]">No cases yet.</p>
-            <Link to="/new-case" className="text-xs text-[#666] hover:text-[#999] mt-1 inline-block">Start a new case →</Link>
+          <div className="p-10 text-center">
+            <p className="text-2xl mb-2">📂</p>
+            <p className="text-sm text-gray-500">No cases yet.</p>
+            <Link to="/new-case" className="text-xs text-gray-400 hover:text-gray-700 mt-1 inline-block">Start a new case →</Link>
           </div>
         ) : (
-          <div className="divide-y divide-[#1a1a1a]">
+          <div className="divide-y divide-gray-50">
             {cases.map(c => (
-              <Link key={c.id} to={`/cases/${c.id}`} className="flex items-center justify-between px-5 py-4 hover:bg-[#1a1a1a] transition-colors">
+              <Link key={c.id} to={`/cases/${c.id}`} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-[#ccc] font-medium">{c.patient_name}</p>
-                  <p className="text-xs text-[#555] mt-0.5 line-clamp-1">{c.symptoms || 'No symptoms recorded'}</p>
+                  <p className="text-sm text-gray-800 font-medium">{c.patient_name}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{c.symptoms || 'No symptoms recorded'}</p>
                 </div>
                 <div className="flex items-center gap-3 ml-4">
                   <UrgencyBadge level={c.urgency_level} />
-                  <span className="text-xs text-[#444] whitespace-nowrap">{new Date(c.created_at).toLocaleDateString()}</span>
+                  <span className="text-xs text-gray-300 whitespace-nowrap">{new Date(c.created_at).toLocaleDateString()}</span>
                 </div>
               </Link>
             ))}

@@ -1,34 +1,33 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Users, FolderOpen, Plus, Settings, Activity } from 'lucide-react';
-import { OfflineBadge } from './ui';
+import { OfflineBadge, GemmaBadge } from './ui';
 
 const nav = [
-  { to: '/', icon: Activity, label: 'Dashboard' },
-  { to: '/patients', icon: Users, label: 'Patients' },
-  { to: '/cases', icon: FolderOpen, label: 'Cases' },
-  { to: '/new-case', icon: Plus, label: 'New Case' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/',          emoji: '🏠', label: 'Dashboard' },
+  { to: '/patients',  emoji: '👩‍⚕️', label: 'Patients'  },
+  { to: '/cases',     emoji: '📋', label: 'Cases'     },
+  { to: '/new-case',  emoji: '➕', label: 'New Case'  },
+  { to: '/settings',  emoji: '⚙️', label: 'Settings'  },
 ];
 
 export default function Layout() {
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-[#f8f7f5]">
       {/* Sidebar */}
-      <aside className="w-56 flex-shrink-0 bg-[#0a0a0a] border-r border-[#1a1a1a] flex flex-col">
-        <div className="px-5 py-6 border-b border-[#1a1a1a]">
+      <aside className="w-52 flex-shrink-0 bg-white border-r border-gray-100 flex flex-col">
+        <div className="px-5 py-5 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-[#e8e3dc] flex items-center justify-center">
-              <span className="text-[#0f0f0f] text-xs font-bold">M</span>
+            <div className="w-8 h-8 rounded-xl bg-gray-900 flex items-center justify-center text-white text-sm">
+              🩺
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#e8e3dc] leading-none">Mahiya Edge</p>
-              <p className="text-[10px] text-[#555] mt-0.5">Clinical Intelligence</p>
+              <p className="text-sm font-semibold text-gray-900 leading-none">Mahiya Edge</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Clinical Intelligence</p>
             </div>
           </div>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5">
-          {nav.map(({ to, icon: Icon, label }) => (
+          {nav.map(({ to, emoji, label }) => (
             <NavLink
               key={to}
               to={to}
@@ -36,19 +35,20 @@ export default function Layout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
                   isActive
-                    ? 'bg-[#1e1e1e] text-[#e8e3dc]'
-                    : 'text-[#555] hover:text-[#999] hover:bg-[#141414]'
+                    ? 'bg-gray-100 text-gray-900 font-medium'
+                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
                 }`
               }
             >
-              <Icon size={15} />
+              <span className="text-base leading-none">{emoji}</span>
               {label}
             </NavLink>
           ))}
         </nav>
 
-        <div className="px-5 py-4 border-t border-[#1a1a1a]">
+        <div className="px-4 py-4 border-t border-gray-100 space-y-2">
           <OfflineBadge />
+          <GemmaBadge />
         </div>
       </aside>
 
