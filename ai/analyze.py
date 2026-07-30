@@ -24,10 +24,11 @@ except Exception:
     USER_PROMPT_TEMPLATE = ""
 
 # ---------------------------------------------------------------------------
-# Gemma model via Gemini API
+# Model config
 # ---------------------------------------------------------------------------
-GEMMA_MODEL = "gemma-3-27b-it"   # Gemma 3 27B — best available via API
-FALLBACK_MODEL = "gemma-3-12b-it" # lighter fallback
+GEMMA_MODEL = "gemma-3-27b-it"        # Gemini API model
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma3")  # local Ollama model
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
 # ---------------------------------------------------------------------------
 # Keyword fallback (used when API unavailable)
@@ -129,7 +130,7 @@ def _keyword_fallback(symptoms: str, patient: dict, language: str, guidelines: l
 # ---------------------------------------------------------------------------
 # Gemma 4 inference via Gemini API
 # ---------------------------------------------------------------------------
-def _build_prompt(symptoms: str, patient: dict, language: str, guidelines: list) -> str:
+def _build_prompt(symptoms: str, patient: dict, language: str, guidelines: list, image_description: str = "") -> str:
     name = patient.get("name", "Patient")
     age = patient.get("age", "unknown")
     gravida = patient.get("gravida", "?")
@@ -138,11 +139,12 @@ def _build_prompt(symptoms: str, patient: dict, language: str, guidelines: list)
     village = patient.get("village", "unknown")
     lang_label = "Hausa (ha)" if language == "ha" else "English (en)"
     guidelines_text = "\n".join(f"- {g}" for g in guidelines) if guidelines else "No guidelines retrieved (RAG index not built)."
+    image_section = f"\nClinical image observation:\n{image_description}" if image_description else ""
 
     return f"""Patient: {name}, Age {age}, G{gravida}P{para}, LMP: {lmp}, Village: {village}
 
 Reported symptoms ({lang_label}):
-{symptoms}
+{symptoms}{image_section}
 
 Retrieved clinical guidelines:
 {guidelines_text}
@@ -165,6 +167,43 @@ Required JSON schema:
 }}"""
 
 
+def _call_ollama(prompt: str) -> dict:
+    """Local Gemma inference via Ollama — fully offline."""
+    import urllib.request
+
+    system = SYSTEM_PROMPT or (
+        "You are a clinical decision support assistant for frontline healthcare workers in rural Nigeria. "
+        "You assist CHEWs, nurses, and midwives. You do NOT diagnose or prescribe. "
+        "Identify possible maternal and neonatal danger signs. "
+        "Always output ONLY valid JSON. Never add prose outside the JSON object."
+    )
+
+    payload = json.dumps({
+        "model": OLLAMA_MODEL,
+        "prompt": f"{system}\n\n{prompt}",
+        "stream": False,
+        "format": "json",
+        "options": {"temperature": 0.2, "num_predict": 1024},
+    }).encode()
+
+    req = urllib.request.Request(
+        f"{OLLAMA_URL}/api/generate",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=120) as resp:
+        raw = json.loads(resp.read())["response"].strip()
+
+    raw = re.sub(r"^```(?:json)?\s*", "", raw)
+    raw = re.sub(r"\s*```$", "", raw)
+
+    result = json.loads(raw)
+    result["gemma_powered"] = True
+    result["gemma_model"] = f"ollama/{OLLAMA_MODEL}"
+    result["inference_mode"] = "local"
+    return result
+
+
 def _call_gemma(prompt: str, api_key: str) -> dict:
     import google.generativeai as genai
 
@@ -179,7 +218,7 @@ def _call_gemma(prompt: str, api_key: str) -> dict:
             "Always output ONLY valid JSON. Never add prose outside the JSON object."
         ),
         generation_config=genai.GenerationConfig(
-            temperature=0.2,       # low temp = consistent, factual output
+            temperature=0.2,
             max_output_tokens=1024,
             response_mime_type="application/json",
         ),
@@ -187,43 +226,51 @@ def _call_gemma(prompt: str, api_key: str) -> dict:
 
     response = model.generate_content(prompt)
     raw = response.text.strip()
-
-    # Strip markdown code fences if present
     raw = re.sub(r"^```(?:json)?\s*", "", raw)
     raw = re.sub(r"\s*```$", "", raw)
 
     result = json.loads(raw)
     result["gemma_powered"] = True
     result["gemma_model"] = GEMMA_MODEL
+    result["inference_mode"] = "api"
     return result
 
 
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
-def analyze(symptoms: str, patient: dict, language: str) -> dict:
+def analyze(symptoms: str, patient: dict, language: str, image_description: str = "") -> dict:
     guidelines = retrieve(symptoms)
+    prompt = _build_prompt(symptoms, patient, language, guidelines, image_description)
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
 
-    if not api_key or api_key == "your_api_key_here":
-        return _keyword_fallback(symptoms, patient, language, guidelines)
-
+    # 1. Try local Ollama (fully offline)
     try:
-        prompt = _build_prompt(symptoms, patient, language, guidelines)
-        result = _call_gemma(prompt, api_key)
-
-        # Ensure required fields exist (defensive)
+        result = _call_ollama(prompt)
         result.setdefault("symptoms_recorded", symptoms)
         result.setdefault("language_used", language)
         result.setdefault("disclaimer",
             "This tool supports clinical decision-making and does not replace professional medical judgment.")
         return result
+    except Exception as ollama_err:
+        pass  # Ollama not running — try API
 
-    except Exception as e:
-        # Gemma call failed — fall back gracefully, log the error
-        fallback = _keyword_fallback(symptoms, patient, language, guidelines)
-        fallback["gemma_error"] = str(e)
-        return fallback
+    # 2. Try Gemini API
+    if api_key and api_key != "your_api_key_here":
+        try:
+            result = _call_gemma(prompt, api_key)
+            result.setdefault("symptoms_recorded", symptoms)
+            result.setdefault("language_used", language)
+            result.setdefault("disclaimer",
+                "This tool supports clinical decision-making and does not replace professional medical judgment.")
+            return result
+        except Exception as api_err:
+            fallback = _keyword_fallback(symptoms, patient, language, guidelines)
+            fallback["gemma_error"] = str(api_err)
+            return fallback
+
+    # 3. Keyword fallback
+    return _keyword_fallback(symptoms, patient, language, guidelines)
 
 
 if __name__ == "__main__":
@@ -233,6 +280,7 @@ if __name__ == "__main__":
             payload.get("symptoms", ""),
             payload.get("patient", {}),
             payload.get("language", "en"),
+            payload.get("image_description", ""),
         )
         print(json.dumps(result, ensure_ascii=False))
     except Exception as e:

@@ -25,4 +25,23 @@ export const api = {
 
   analyze: (data) => req('POST', '/ai/analyze', data),
   aiStatus: () => req('GET', '/ai/status'),
+
+  async transcribe(audioBlob, language = 'en') {
+    const form = new FormData();
+    form.append('audio', audioBlob, 'recording.webm');
+    form.append('language', language);
+    const res = await fetch(`${BASE}/ai/transcribe`, { method: 'POST', body: form });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Transcription failed');
+    return data.text;
+  },
+
+  async uploadImage(file) {
+    const form = new FormData();
+    form.append('image', file);
+    const res = await fetch(`${BASE}/ai/image`, { method: 'POST', body: form });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
 };

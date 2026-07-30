@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Mic, MicOff, ChevronRight } from 'lucide-react';
+import { Mic, MicOff, ChevronRight, Image, X } from 'lucide-react';
 import { api } from '../lib/api';
 import { Card, Btn, Input, Textarea, Spinner, Disclaimer, LangToggle } from '../components/ui';
 
@@ -27,10 +27,13 @@ export default function NewCase() {
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
   const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const [mediaRec, setMediaRec] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [language, setLanguage] = useState('en');
+  const [image, setImage] = useState(null);   // { file, url, serverUrl }
+  const audioChunks = useRef([]);
 
   const [patient, setPatient] = useState({
     name: '', age: '', gravida: '', para: '', lmp: '', village: '',
@@ -47,11 +50,20 @@ export default function NewCase() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const rec = new MediaRecorder(stream);
-      const chunks = [];
-      rec.ondataavailable = e => chunks.push(e.data);
-      rec.onstop = () => {
-        setSymptoms(s => s + (s ? '\n' : '') + (language === 'ha' ? '[Sauti an ɗauka]' : '[Voice note captured — transcription pending]'));
+      audioChunks.current = [];
+      rec.ondataavailable = e => audioChunks.current.push(e.data);
+      rec.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
+        setTranscribing(true);
+        try {
+          const text = await api.transcribe(blob, language);
+          setSymptoms(s => s + (s ? '\n' : '') + text);
+        } catch {
+          setSymptoms(s => s + (s ? '\n' : '') + (language === 'ha' ? '[Sauti an ɗauka]' : '[Voice note captured]'));
+        } finally {
+          setTranscribing(false);
+        }
       };
       rec.start();
       setMediaRec(rec);
@@ -67,6 +79,19 @@ export default function NewCase() {
     setMediaRec(null);
   }
 
+  async function handleImageChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setImage({ file, url, serverUrl: null });
+    try {
+      const res = await api.uploadImage(file);
+      setImage(prev => ({ ...prev, serverUrl: res.url }));
+    } catch {
+      // Image stored locally, will be attached on submit
+    }
+  }
+
   async function handleSubmit() {
     setLoading(true);
     setError('');
@@ -78,7 +103,12 @@ export default function NewCase() {
         patientData = await api.createPatient(patient);
       }
       const c = await api.createCase({ patient_id: patientData.id, symptoms, urgency_level: 'unknown' });
-      const analysis = await api.analyze({ symptoms, patient: patientData, language });
+      const analysis = await api.analyze({
+        symptoms,
+        patient: patientData,
+        language,
+        image_description: image?.serverUrl ? `Clinical image attached: ${image.serverUrl}` : '',
+      });
       await api.updateAnalysis(c.id, { ai_analysis: analysis, urgency_level: analysis.urgency_level });
       navigate(`/cases/${c.id}`);
     } catch {
@@ -189,6 +219,7 @@ export default function NewCase() {
           <div className="flex items-center gap-3">
             <button
               onClick={recording ? stopRecording : startRecording}
+              disabled={transcribing}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
                 recording
                   ? 'bg-red-50 text-red-700 border-red-200 animate-pulse'
@@ -201,6 +232,24 @@ export default function NewCase() {
                 : (language === 'ha' ? '🎙 Yi Amfani da Murya' : '🎙 Voice Input')}
             </button>
             {recording && <span className="text-xs text-red-500 animate-pulse">● Recording...</span>}
+            {transcribing && <span className="text-xs text-gray-400 flex items-center gap-1"><Spinner /> Transcribing...</span>}
+          </div>
+
+          {/* Image upload */}
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100 cursor-pointer transition-all">
+              <Image size={14} />
+              {language === 'ha' ? '📷 Ɗora Hoto' : '📷 Attach Image'}
+              <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+            </label>
+            {image && (
+              <div className="flex items-center gap-2">
+                <img src={image.url} alt="clinical" className="w-10 h-10 rounded-lg object-cover border border-gray-200" />
+                <button onClick={() => setImage(null)} className="text-gray-400 hover:text-gray-700">
+                  <X size={14} />
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="pt-2 flex justify-between">
@@ -233,6 +282,12 @@ export default function NewCase() {
               <p className="text-xs text-gray-400 mb-1 font-medium">🌐 {language === 'ha' ? 'Harshe' : 'Language'}</p>
               <p className="text-sm text-gray-800">{language === 'ha' ? '🇳🇬 Hausa' : '🇬🇧 English'}</p>
             </div>
+            {image && (
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs text-gray-400 mb-2 font-medium">📷 {language === 'ha' ? 'Hoto' : 'Clinical Image'}</p>
+                <img src={image.url} alt="clinical" className="w-full max-h-40 object-cover rounded-lg border border-gray-200" />
+              </div>
+            )}
           </div>
 
           <Disclaimer />

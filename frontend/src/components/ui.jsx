@@ -107,18 +107,20 @@ export function Disclaimer() {
 export function GemmaBadge() {
   const [status, setStatus] = useState(null);
   useEffect(() => {
-    api.aiStatus().then(setStatus).catch(() => setStatus({ gemma_live: false }));
+    api.aiStatus().then(setStatus).catch(() => setStatus({ gemma_live: false, label: '⚙️ Keyword fallback' }));
   }, []);
 
   if (!status) return null;
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${
-      status.gemma_live
+      status.ollama_live
+        ? 'bg-green-50 text-green-700 border border-green-200'
+        : status.api_live
         ? 'bg-purple-50 text-purple-700 border border-purple-200'
         : 'bg-gray-100 text-gray-500 border border-gray-200'
     }`}>
       <Cpu size={11} />
-      {status.gemma_live ? '✨ Gemma 4 live' : 'Keyword mode'}
+      {status.label || (status.gemma_live ? '✨ Gemma live' : 'Keyword mode')}
     </span>
   );
 }

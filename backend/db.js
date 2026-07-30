@@ -1,8 +1,33 @@
 const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const DB_PATH = path.join(__dirname, '..', 'database', 'mahiya.db');
+
+// Encryption key: set DB_ENCRYPTION_KEY in .env (32-char string)
+// If not set, falls back to a device-stable key derived from hostname
+function getKey() {
+  const raw = process.env.DB_ENCRYPTION_KEY || require('os').hostname() + '_mahiya_edge_key';
+  return crypto.createHash('sha256').update(raw).digest(); // 32 bytes
+}
+
+function encryptDb(data) {
+  const key = getKey();
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+  const encrypted = Buffer.concat([cipher.update(data), cipher.final()]);
+  // Prepend IV so we can decrypt later: [16 bytes IV][encrypted data]
+  return Buffer.concat([iv, encrypted]);
+}
+
+function decryptDb(data) {
+  const key = getKey();
+  const iv = data.slice(0, 16);
+  const encrypted = data.slice(16);
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]);
+}
 
 let db;
 
@@ -12,7 +37,11 @@ async function getDb() {
   const SQL = await initSqlJs();
 
   if (fs.existsSync(DB_PATH)) {
-    db = new SQL.Database(fs.readFileSync(DB_PATH));
+    const raw = fs.readFileSync(DB_PATH);
+    // Detect if file is encrypted (new format) or legacy plaintext SQLite
+    const isEncrypted = raw.slice(0, 6).toString() !== 'SQLite';
+    const dbData = isEncrypted ? decryptDb(raw) : raw;
+    db = new SQL.Database(dbData);
   } else {
     db = new SQL.Database();
   }
@@ -60,7 +89,8 @@ async function getDb() {
 function persist() {
   if (!db) return;
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-  fs.writeFileSync(DB_PATH, Buffer.from(db.export()));
+  const data = Buffer.from(db.export());
+  fs.writeFileSync(DB_PATH, encryptDb(data));
 }
 
 module.exports = { getDb, persist };
