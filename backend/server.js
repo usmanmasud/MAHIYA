@@ -9,7 +9,19 @@ const ALLOWED_ORIGINS = [
   'http://localhost:5173',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
-app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
+
+const corsOptions = {
+  origin: (origin, cb) => {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS blocked: ${origin}`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'x-clinic-pin'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '..', 'storage')));
 
