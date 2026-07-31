@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const DB_PATH = path.join(__dirname, '..', 'database', 'mahiya.db');
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'database', 'mahiya.db');
 
 // Encryption key: set DB_ENCRYPTION_KEY in .env (32-char string)
 // If not set, falls back to a device-stable key derived from hostname
@@ -38,10 +38,21 @@ async function getDb() {
 
   if (fs.existsSync(DB_PATH)) {
     const raw = fs.readFileSync(DB_PATH);
-    // Detect if file is encrypted (new format) or legacy plaintext SQLite
-    const isEncrypted = raw.slice(0, 6).toString() !== 'SQLite';
-    const dbData = isEncrypted ? decryptDb(raw) : raw;
-    db = new SQL.Database(dbData);
+    // Detect SQLite plaintext header (starts with 'SQLite format 3')
+    let dbData;
+    if (raw.slice(0, 6).toString('ascii') === 'SQLite') {
+      // Legacy plaintext DB — load it, then re-save encrypted
+      dbData = raw;
+    } else {
+      try {
+        dbData = decryptDb(raw);
+      } catch {
+        // Decryption failed (e.g. key changed) — start fresh
+        console.warn('DB decryption failed — starting with empty database.');
+        dbData = null;
+      }
+    }
+    db = dbData ? new SQL.Database(dbData) : new SQL.Database();
   } else {
     db = new SQL.Database();
   }

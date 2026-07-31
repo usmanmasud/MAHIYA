@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: mahiya-edge-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: bash build.sh
+    startCommand: cd backend && node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: CLINIC_PIN
+        sync: false          # set manually in Render dashboard
+      - key: GEMINI_API_KEY
+        sync: false          # set manually in Render dashboard
+      - key: DB_ENCRYPTION_KEY
+        sync: false          # set manually in Render dashboard
+      - key: OLLAMA_URL
+        value: ""            # no local Ollama on Render — uses Gemini API
+      - key: WHISPER_MODEL
+        value: small
+      - key: FRONTEND_URL
+        sync: false          # set to your Vercel/Netlify URL after frontend deploy
+      - key: DB_PATH
+        value: /data/mahiya.db
+    disk:
+      name: mahiya-db
+      mountPath: /data
+      sizeGB: 1

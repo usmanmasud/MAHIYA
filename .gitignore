@@ -1,0 +1,35 @@
+# Env
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Build
+frontend/dist/
+frontend/.vite/
+
+# Database
+database/mahiya.db
+
+# Uploads
+storage/uploads/*
+!storage/uploads/.gitkeep
+
+# Python model cache
+~/.cache/huggingface/
+~/.cache/whisper/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+backend.log
