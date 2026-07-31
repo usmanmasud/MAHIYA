@@ -10,16 +10,20 @@ import Settings from './pages/Settings';
 import PatientDetail from './pages/PatientDetail';
 import Analytics from './pages/Analytics';
 import Login from './pages/Login';
+import Landing from './pages/Landing';
 
 export default function App() {
-  const [authed, setAuthed] = useState(!!localStorage.getItem('clinic_pin'));
+  const [stage, setStage] = useState(
+    localStorage.getItem('clinic_pin') ? 'app' : 'landing'
+  );
 
-  if (!authed) return <Login onLogin={() => setAuthed(true)} />;
+  if (stage === 'landing') return <Landing onEnter={() => setStage('login')} />;
+  if (stage === 'login') return <Login onLogin={() => setStage('app')} />;
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<Layout onLogout={() => { localStorage.removeItem('clinic_pin'); setAuthed(false); }} />}>
+        <Route element={<Layout onLogout={() => { localStorage.removeItem('clinic_pin'); setStage('landing'); }} />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/patients" element={<Patients />} />
           <Route path="/patients/:id" element={<PatientDetail />} />

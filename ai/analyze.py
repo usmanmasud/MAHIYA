@@ -26,8 +26,8 @@ except Exception:
 # ---------------------------------------------------------------------------
 # Model config
 # ---------------------------------------------------------------------------
-GEMMA_MODEL = "gemma-3n-e4b-it"        # Gemma 4 via Gemini API (gemma-3n = Gemma 4 generation)
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma3n")  # Gemma 4 via Ollama (when available)
+GEMMA_MODEL = "gemma-4-27b-it"          # Gemma 4 via Gemini API
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma4")   # Gemma 4 via Ollama (when available)
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
 # ---------------------------------------------------------------------------

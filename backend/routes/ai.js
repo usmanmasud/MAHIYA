@@ -114,7 +114,7 @@ router.get('/status', async (req, res) => {
     ollama_live: ollamaLive,
     api_live: apiLive,
     mode,
-    model: ollamaLive ? `ollama/${process.env.OLLAMA_MODEL || 'gemma3n'}` : apiLive ? 'gemma-3n-e4b-it' : null,
+    model: ollamaLive ? `ollama/${process.env.OLLAMA_MODEL || 'gemma4'}` : apiLive ? 'gemma-4-27b-it' : null,
     label: ollamaLive ? '🟢 Gemma local (offline)' : apiLive ? '🌐 Gemma API' : '⚙️ Keyword fallback',
   });
 });
