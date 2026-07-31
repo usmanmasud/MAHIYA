@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
+import { Users, ClipboardList, FileText, AlertTriangle, BarChart2, Search } from 'lucide-react';
 import { api } from '../lib/api';
-import { Card, UrgencyBadge } from '../components/ui';
+import { Card, UrgencyBadge, PageHeader } from '../components/ui';
 
 const URGENCY_COLORS = {
   critical: 'bg-red-500',
-  high: 'bg-orange-400',
+  high:     'bg-orange-400',
   moderate: 'bg-yellow-400',
-  low: 'bg-green-500',
+  low:      'bg-emerald-500',
 };
 
 export default function Analytics() {
@@ -17,7 +18,7 @@ export default function Analytics() {
     api.getAnalytics().then(setData).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="p-8 text-sm text-gray-400">Loading analytics... ⏳</div>;
+  if (loading) return <div className="p-8 text-sm text-gray-400">Loading analytics...</div>;
   if (!data) return <div className="p-8 text-sm text-gray-500">Could not load analytics.</div>;
 
   const { totals, cases_by_day, urgency_breakdown, recent_audit } = data;
@@ -25,23 +26,22 @@ export default function Analytics() {
 
   return (
     <div className="p-8 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">📊 Analytics</h1>
-        <p className="text-sm text-gray-400 mt-1">Clinic consultation and referral metrics</p>
-      </div>
+      <PageHeader title="Analytics" subtitle="Clinic consultation and referral metrics" />
 
       {/* Totals */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Patients',  value: totals.patients,  emoji: '👩‍⚕️' },
-          { label: 'Cases',     value: totals.cases,     emoji: '📋' },
-          { label: 'Referrals', value: totals.referrals, emoji: '📄' },
-          { label: 'Critical',  value: totals.critical,  emoji: '🚨' },
-        ].map(({ label, value, emoji }) => (
+          { label: 'Patients',  value: totals.patients,  icon: Users,          color: 'text-blue-500',    bg: 'bg-blue-50'    },
+          { label: 'Cases',     value: totals.cases,     icon: ClipboardList,  color: 'text-violet-500',  bg: 'bg-violet-50'  },
+          { label: 'Referrals', value: totals.referrals, icon: FileText,       color: 'text-emerald-500', bg: 'bg-emerald-50' },
+          { label: 'Critical',  value: totals.critical,  icon: AlertTriangle,  color: 'text-red-500',     bg: 'bg-red-50'     },
+        ].map(({ label, value, icon: Icon, color, bg }) => (
           <Card key={label} className="p-5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-gray-400 font-medium">{label}</span>
-              <span className="text-lg">{emoji}</span>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs text-gray-400 font-medium tracking-wide uppercase">{label}</span>
+              <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center`}>
+                <Icon size={15} className={color} strokeWidth={1.75} />
+              </div>
             </div>
             <p className="text-3xl font-semibold text-gray-900">{value}</p>
           </Card>
@@ -51,7 +51,10 @@ export default function Analytics() {
       <div className="grid grid-cols-2 gap-4 mb-6">
         {/* Cases last 14 days */}
         <Card className="p-5">
-          <p className="text-xs text-gray-400 font-medium mb-4">📅 Cases — Last 14 Days</p>
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart2 size={14} className="text-gray-400" />
+            <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">Cases — Last 14 Days</p>
+          </div>
           {cases_by_day.length === 0 ? (
             <p className="text-sm text-gray-400">No data yet.</p>
           ) : (
@@ -59,13 +62,11 @@ export default function Analytics() {
               {cases_by_day.map(d => (
                 <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
                   <div
-                    className="w-full bg-gray-900 rounded-sm"
+                    className="w-full bg-gray-900 rounded-sm transition-all"
                     style={{ height: `${Math.round((d.count / maxDay) * 80)}px`, minHeight: '4px' }}
                     title={`${d.day}: ${d.count}`}
                   />
-                  <span className="text-[9px] text-gray-400 rotate-45 origin-left">
-                    {d.day.slice(5)}
-                  </span>
+                  <span className="text-[9px] text-gray-400 rotate-45 origin-left">{d.day.slice(5)}</span>
                 </div>
               ))}
             </div>
@@ -74,7 +75,10 @@ export default function Analytics() {
 
         {/* Urgency breakdown */}
         <Card className="p-5">
-          <p className="text-xs text-gray-400 font-medium mb-4">🎯 Urgency Breakdown</p>
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle size={14} className="text-gray-400" />
+            <p className="text-xs text-gray-500 font-medium tracking-wide uppercase">Urgency Breakdown</p>
+          </div>
           {urgency_breakdown.length === 0 ? (
             <p className="text-sm text-gray-400">No data yet.</p>
           ) : (
@@ -103,8 +107,9 @@ export default function Analytics() {
 
       {/* Audit log */}
       <Card>
-        <div className="px-5 py-4 border-b border-gray-100">
-          <span className="text-sm font-medium text-gray-800">🔍 Recent Audit Log</span>
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+          <Search size={14} className="text-gray-400" />
+          <span className="text-sm font-semibold text-gray-800">Recent Audit Log</span>
         </div>
         {recent_audit.length === 0 ? (
           <div className="p-6 text-center text-sm text-gray-400">No audit entries yet.</div>
@@ -113,9 +118,9 @@ export default function Analytics() {
             {recent_audit.map((log, i) => (
               <div key={i} className="px-5 py-3 flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-medium text-gray-700">{log.action}</span>
+                  <span className="text-xs font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md">{log.action}</span>
                   {log.entity && (
-                    <span className="text-xs text-gray-400 ml-2">{log.entity} {log.entity_id?.slice(0, 8)}</span>
+                    <span className="text-xs text-gray-400 ml-2">{log.entity} · {log.entity_id?.slice(0, 8)}</span>
                   )}
                 </div>
                 <span className="text-xs text-gray-300">{new Date(log.created_at).toLocaleString()}</span>
