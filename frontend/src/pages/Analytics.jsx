@@ -21,7 +21,7 @@ export default function Analytics() {
   if (!data) return <div className="p-8 text-sm text-gray-500">Could not load analytics.</div>;
 
   const { totals, cases_by_day, urgency_breakdown, recent_audit } = data;
-  const maxDay = Math.max(...(cases_by_day.map(d => d.count)), 1);
+  const maxDay = Math.max(...(cases_by_day ?? []).map(d => d.count), 1);
 
   return (
     <div className="p-8 max-w-4xl">

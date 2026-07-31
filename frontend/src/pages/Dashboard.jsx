@@ -10,7 +10,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     Promise.all([api.getPatients(), api.getCases()])
-      .then(([p, c]) => { setPatients(p); setCases(c); })
+      .then(([p, c]) => { setPatients(Array.isArray(p) ? p : []); setCases(Array.isArray(c) ? c : []); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

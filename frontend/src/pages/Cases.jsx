@@ -8,7 +8,7 @@ export default function Cases() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getCases().then(setCases).finally(() => setLoading(false));
+    api.getCases().then(d => setCases(Array.isArray(d) ? d : [])).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   return (

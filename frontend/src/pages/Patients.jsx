@@ -10,7 +10,7 @@ export default function Patients() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getPatients().then(setPatients).finally(() => setLoading(false));
+    api.getPatients().then(d => setPatients(Array.isArray(d) ? d : [])).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const filtered = patients.filter(p =>
