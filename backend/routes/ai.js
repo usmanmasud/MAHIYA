@@ -11,32 +11,87 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
 });
 
-// Pass API key to Python subprocess via environment
+const ANALYZE_TIMEOUT = parseInt(process.env.ANALYZE_TIMEOUT || '60000');
+const AI_DIR = path.join(__dirname, '..', '..', 'ai');
+
 function getPyEnv() {
-  return {
-    ...process.env,
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-  };
+  return { ...process.env, GEMINI_API_KEY: process.env.GEMINI_API_KEY || '' };
 }
 
+// ---------------------------------------------------------------------------
+// Persistent Python worker — model loads once, stays alive
+// ---------------------------------------------------------------------------
+let worker = null;
+let workerReady = false;
+let pendingQueue = []; // { resolve, reject, timer }
+let lineBuffer = '';
+
+function startWorker() {
+  worker = spawn('python', [path.join(AI_DIR, 'worker.py')], {
+    env: getPyEnv(),
+    cwd: AI_DIR,
+  });
+
+  worker.stdout.on('data', chunk => {
+    lineBuffer += chunk.toString();
+    let nl;
+    while ((nl = lineBuffer.indexOf('\n')) !== -1) {
+      const line = lineBuffer.slice(0, nl).trim();
+      lineBuffer = lineBuffer.slice(nl + 1);
+      if (!line) continue;
+      const pending = pendingQueue.shift();
+      if (!pending) continue;
+      clearTimeout(pending.timer);
+      try { pending.resolve(JSON.parse(line)); }
+      catch { pending.reject(new Error('Invalid JSON from worker')); }
+    }
+  });
+
+  worker.stderr.on('data', d => console.error('[py-worker]', d.toString().trim()));
+
+  worker.on('close', () => {
+    workerReady = false;
+    worker = null;
+    // Drain pending with error then restart
+    for (const p of pendingQueue) { clearTimeout(p.timer); p.reject(new Error('Worker crashed')); }
+    pendingQueue = [];
+    setTimeout(startWorker, 1000);
+  });
+
+  workerReady = true;
+}
+
+startWorker();
+
+function runAnalysis(input) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      const idx = pendingQueue.findIndex(p => p.resolve === resolve);
+      if (idx !== -1) pendingQueue.splice(idx, 1);
+      reject(new Error('AI analysis timed out'));
+    }, ANALYZE_TIMEOUT);
+
+    pendingQueue.push({ resolve, reject, timer });
+    worker.stdin.write(input + '\n');
+  });
+}
+
+// One-shot Python runner (used for transcription only)
 function runPython(scriptPath, input) {
   return new Promise((resolve, reject) => {
     const py = spawn('python', [scriptPath], { env: getPyEnv() });
     let output = '', errOut = '';
-    py.stdin.write(input);
-    py.stdin.end();
+    const timer = setTimeout(() => { py.kill(); reject(new Error('Timed out')); }, ANALYZE_TIMEOUT);
+    py.stdin.write(input); py.stdin.end();
     py.stdout.on('data', d => { output += d.toString(); });
     py.stderr.on('data', d => { errOut += d.toString(); });
     py.on('close', code => {
+      clearTimeout(timer);
       if (code !== 0) return reject(new Error(errOut || 'Python process failed'));
       try { resolve(JSON.parse(output)); }
-      catch { reject(new Error('Invalid JSON from Python process')); }
+      catch { reject(new Error('Invalid JSON from Python')); }
     });
   });
-}
-
-function runAnalysis(input) {
-  return runPython(path.join(__dirname, '..', '..', 'ai', 'analyze.py'), input);
 }
 
 router.post('/analyze', async (req, res) => {

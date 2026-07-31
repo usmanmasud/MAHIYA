@@ -16,6 +16,21 @@ GUIDELINES_DIR = os.path.join(os.path.dirname(__file__), '..', 'guidelines')
 INDEX_PATH = os.path.join(os.path.dirname(__file__), 'index.faiss')
 CHUNKS_PATH = os.path.join(os.path.dirname(__file__), 'chunks.json')
 
+_model = None
+_index = None
+_chunks = None
+
+def _load():
+    global _model, _index, _chunks
+    if _model is not None:
+        return
+    import faiss
+    from sentence_transformers import SentenceTransformer
+    _model = SentenceTransformer('all-MiniLM-L6-v2')
+    _index = faiss.read_index(INDEX_PATH)
+    with open(CHUNKS_PATH) as f:
+        _chunks = json.load(f)
+
 
 def retrieve(query: str, top_k: int = 3) -> list[str]:
     """
@@ -26,18 +41,11 @@ def retrieve(query: str, top_k: int = 3) -> list[str]:
         return []
 
     try:
-        import faiss
         import numpy as np
-        from sentence_transformers import SentenceTransformer
-
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        index = faiss.read_index(INDEX_PATH)
-        with open(CHUNKS_PATH) as f:
-            chunks = json.load(f)
-
-        embedding = model.encode([query]).astype('float32')
-        _, indices = index.search(embedding, top_k)
-        return [chunks[i] for i in indices[0] if i < len(chunks)]
+        _load()
+        embedding = _model.encode([query]).astype('float32')
+        _, indices = _index.search(embedding, top_k)
+        return [_chunks[i] for i in indices[0] if i < len(_chunks)]
     except Exception:
         return []
 
