@@ -30,6 +30,28 @@ const PH = {
   en: { name: 'e.g. Fatima Musa',  village: 'e.g. Kano LGA',  symptoms: 'Describe symptoms, observations...' },
 };
 
+// Encode AudioBuffer -> WAV ArrayBuffer (16-bit PCM, mono)
+function encodeWav(audioBuffer) {
+  const numChannels = 1;
+  const sampleRate = audioBuffer.sampleRate;
+  const samples = audioBuffer.getChannelData(0);
+  const pcm = new Int16Array(samples.length);
+  for (let i = 0; i < samples.length; i++)
+    pcm[i] = Math.max(-1, Math.min(1, samples[i])) * 0x7fff;
+  const buf = new ArrayBuffer(44 + pcm.byteLength);
+  const view = new DataView(buf);
+  const write = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+  write(0, 'RIFF'); view.setUint32(4, 36 + pcm.byteLength, true);
+  write(8, 'WAVE'); write(12, 'fmt ');
+  view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+  view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true); write(36, 'data');
+  view.setUint32(40, pcm.byteLength, true);
+  new Int16Array(buf, 44).set(pcm);
+  return buf;
+}
+
 export default function NewCase() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -92,8 +114,18 @@ export default function NewCase() {
       rec.ondataavailable = e => audioChunks.current.push(e.data);
       rec.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
+        const webmBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
         setTranscribing(true);
+        // Convert webm -> wav via AudioContext so faster-whisper can decode without ffmpeg
+        let blob = webmBlob;
+        try {
+          const arrayBuf = await webmBlob.arrayBuffer();
+          const audioCtx = new AudioContext({ sampleRate: 16000 });
+          const decoded = await audioCtx.decodeAudioData(arrayBuf);
+          await audioCtx.close();
+          const wav = encodeWav(decoded);
+          blob = new Blob([wav], { type: 'audio/wav' });
+        } catch { /* fallback to webm if conversion fails */ }
         try {
           const text = await api.transcribe(blob, language);
           setSymptoms(s => s + (s ? '\n' : '') + text);

@@ -46,7 +46,8 @@ export const api = {
 
   async transcribe(audioBlob, language = 'en') {
     const form = new FormData();
-    form.append('audio', audioBlob, 'recording.webm');
+    const ext = audioBlob.type.includes('wav') ? 'wav' : 'webm';
+    form.append('audio', audioBlob, `recording.${ext}`);
     form.append('language', language);
     const res = await fetch(`${BASE}/ai/transcribe`, {
       method: 'POST',
