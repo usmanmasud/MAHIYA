@@ -21,7 +21,7 @@ function getPyEnv() {
 
 function runPython(scriptPath, input) {
   return new Promise((resolve, reject) => {
-    const py = spawn(process.platform === 'win32' ? 'python' : 'python3', [scriptPath], { env: getPyEnv() });
+    const py = spawn('python', [scriptPath], { env: getPyEnv() });
     let output = '', errOut = '';
     py.stdin.write(input);
     py.stdin.end();
