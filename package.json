@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "backend": "cd backend && node server.js",
-    "frontend": "cd frontend && npx vite",
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd backend && node server.js",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "setup": "npm run install:all && npm run build",
     "dev:backend": "cd backend && node --watch server.js",
     "dev:frontend": "cd frontend && npx vite"
   }

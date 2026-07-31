@@ -4,10 +4,16 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
+const isProd = process.env.NODE_ENV === 'production';
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({ origin: isProd ? false : 'http://localhost:5173' }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '..', 'storage')));
+
+// Serve built frontend in production
+if (isProd) {
+  app.use(express.static(path.join(__dirname, 'public')));
+}
 
 // PIN auth middleware — protects all /api routes except /api/health and /api/auth
 const CLINIC_PIN = process.env.CLINIC_PIN || '1234';
@@ -34,5 +40,12 @@ app.use('/api/audit',     require('./routes/audit'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', offline: true }));
 
+// SPA fallback — must be after all API routes
+if (isProd) {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  });
+}
+
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Mahiya Edge API running on :${PORT}`));
+app.listen(PORT, () => console.log(`Mahiya Edge running on http://localhost:${PORT}`));
