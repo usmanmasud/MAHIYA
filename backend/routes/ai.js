@@ -85,11 +85,15 @@ function runPython(scriptPath, input) {
     py.stdin.write(input); py.stdin.end();
     py.stdout.on('data', d => { output += d.toString(); });
     py.stderr.on('data', d => { errOut += d.toString(); });
-    py.on('close', code => {
+    py.on('close', () => {
       clearTimeout(timer);
-      if (code !== 0) return reject(new Error(errOut || 'Python process failed'));
-      try { resolve(JSON.parse(output)); }
-      catch { reject(new Error('Invalid JSON from Python')); }
+      try {
+        const parsed = JSON.parse(output);
+        if (parsed.error) return reject(new Error(parsed.error));
+        resolve(parsed);
+      } catch {
+        reject(new Error(errOut || output || 'Python process failed'));
+      }
     });
   });
 }
@@ -124,6 +128,7 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
     );
     res.json(transcript);
   } catch (err) {
+    console.error('[transcribe error]', err.message);
     res.status(500).json({ error: err.message });
   } finally {
     fs.unlink(audioPath, () => {});

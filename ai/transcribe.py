@@ -24,7 +24,7 @@ def transcribe(audio_path: str, language: str = "en") -> dict:
         }
 
     # Use 'small' model — good balance of speed/accuracy, ~150 MB
-    model_size = os.environ.get("WHISPER_MODEL", "small")
+    model_size = os.environ.get("WHISPER_MODEL", "tiny")
     # Run on CPU (offline devices won't have GPU)
     model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
